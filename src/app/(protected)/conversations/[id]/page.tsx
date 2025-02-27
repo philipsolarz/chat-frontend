@@ -57,6 +57,7 @@ import { useWebSocket } from '@/hooks/use-websocket';
 import ConversationService from '@/services/conversation-service';
 import MessageService from '@/services/message-service';
 import { Message, Participant, UsageLimits } from '@/types';
+import { useParams } from 'next/navigation';
 
 interface ConversationPageProps {
     params: {
@@ -65,6 +66,8 @@ interface ConversationPageProps {
 }
 
 export default function ConversationPage({ params }: ConversationPageProps) {
+    const { id } = useParams();
+
     const { user } = useAuth();
     const router = useRouter();
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -78,8 +81,8 @@ export default function ConversationPage({ params }: ConversationPageProps) {
         isLoading: conversationLoading,
         isError: conversationError,
     } = useQuery({
-        queryKey: ['conversation', params.id],
-        queryFn: () => ConversationService.getConversation(params.id),
+        queryKey: ['conversation', id],
+        queryFn: () => ConversationService.getConversation(id as string),
     });
 
     // Fetch message limits
@@ -87,8 +90,8 @@ export default function ConversationPage({ params }: ConversationPageProps) {
         data: limits,
         isLoading: limitsLoading,
     } = useQuery({
-        queryKey: ['conversationLimits', params.id],
-        queryFn: () => ConversationService.getConversationLimits(params.id),
+        queryKey: ['conversationLimits', id],
+        queryFn: () => ConversationService.getConversationLimits(id as string),
     });
 
     // Get user participants (characters controlled by the current user)
@@ -112,7 +115,7 @@ export default function ConversationPage({ params }: ConversationPageProps) {
         error: wsError,
         sendTyping,
     } = useWebSocket(
-        params.id,
+        id as string,
         selectedParticipant,
         {
             onMessage: (wsMessage) => {
@@ -134,8 +137,8 @@ export default function ConversationPage({ params }: ConversationPageProps) {
         data: initialMessages,
         isLoading: messagesLoading,
     } = useQuery({
-        queryKey: ['messages', params.id],
-        queryFn: () => MessageService.getRecentMessages(params.id, 50),
+        queryKey: ['messages', id],
+        queryFn: () => MessageService.getRecentMessages(id as string, 50),
         enabled: !wsMessages.length,
     });
 
@@ -181,7 +184,7 @@ export default function ConversationPage({ params }: ConversationPageProps) {
     // Handle conversation deletion
     const handleDeleteConversation = async () => {
         try {
-            await ConversationService.deleteConversation(params.id);
+            await ConversationService.deleteConversation(id as string);
 
             toast.success("Conversation deleted", {
                 description: "The conversation has been deleted successfully.",
