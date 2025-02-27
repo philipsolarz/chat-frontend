@@ -31,9 +31,14 @@ const AuthService = {
      * Get user profile information
      */
     async getUserProfile(): Promise<User> {
-        const response = await api.get<User>('/users/me');
-        storeUser(response.data);
-        return response.data;
+        try {
+            const response = await api.get<User>('/users/me');
+            storeUser(response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching user profile:', error);
+            throw error;
+        }
     },
 
     /**
@@ -41,9 +46,14 @@ const AuthService = {
      */
     async refreshToken(refreshToken: string): Promise<TokenResponse> {
         const data: RefreshTokenRequest = { refresh_token: refreshToken };
-        const response = await api.post<TokenResponse>('/auth/refresh', data);
-        storeTokens(response.data);
-        return response.data;
+        try {
+            const response = await api.post<TokenResponse>('/auth/refresh', data);
+            storeTokens(response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error refreshing token:', error);
+            throw error;
+        }
     },
 
     /**
@@ -52,6 +62,8 @@ const AuthService = {
     async logout(): Promise<void> {
         try {
             await api.post('/auth/logout');
+        } catch (error) {
+            console.error('Error during logout:', error);
         } finally {
             clearAuthData();
         }

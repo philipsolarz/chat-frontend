@@ -32,6 +32,7 @@ import { useAuth } from '@/providers/auth-provider';
 import CharacterService from '@/services/character-service';
 import ConversationService from '@/services/conversation-service';
 import { Character, ConversationSummary } from '@/types';
+import { useParams } from 'next/navigation';
 
 interface CharacterDetailPageProps {
     params: {
@@ -40,6 +41,7 @@ interface CharacterDetailPageProps {
 }
 
 export default function CharacterDetailPage({ params }: CharacterDetailPageProps) {
+    const { id } = useParams();
     const { user } = useAuth();
     const router = useRouter();
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -50,8 +52,8 @@ export default function CharacterDetailPage({ params }: CharacterDetailPageProps
         isLoading: characterLoading,
         isError: characterError
     } = useQuery({
-        queryKey: ['character', params.id],
-        queryFn: () => CharacterService.getCharacter(params.id),
+        queryKey: ['character', id],
+        queryFn: () => CharacterService.getCharacter(id as string),
     });
 
     // Fetch conversations that include this character
@@ -59,10 +61,10 @@ export default function CharacterDetailPage({ params }: CharacterDetailPageProps
         data: conversations,
         isLoading: conversationsLoading
     } = useQuery({
-        queryKey: ['characterConversations', params.id],
+        queryKey: ['characterConversations', id],
         queryFn: () => ConversationService.getRecentConversations().then(
             conversations => conversations.filter(
-                conv => conv.participants?.some(p => p.character_id === params.id)
+                conv => conv.participants?.some(p => p.character_id === id)
             )
         ),
         enabled: !!character
@@ -71,7 +73,7 @@ export default function CharacterDetailPage({ params }: CharacterDetailPageProps
     // Handle character deletion
     const handleDelete = async () => {
         try {
-            await CharacterService.deleteCharacter(params.id);
+            await CharacterService.deleteCharacter(id as string);
 
             toast.success("Character deleted", {
                 description: `${character?.name} has been deleted.`,
@@ -190,7 +192,7 @@ export default function CharacterDetailPage({ params }: CharacterDetailPageProps
                             {isOwner && (
                                 <div className="mt-4 flex flex-wrap gap-2">
                                     <Button size="sm" asChild>
-                                        <Link href={`/characters/${params.id}/edit`}>
+                                        <Link href={`/characters/${id}/edit`}>
                                             <Edit className="mr-2 h-4 w-4" />
                                             Edit
                                         </Link>
@@ -229,7 +231,7 @@ export default function CharacterDetailPage({ params }: CharacterDetailPageProps
 
                         <div className="flex flex-col gap-2 self-start">
                             <Button asChild>
-                                <Link href={`/conversations/create?character=${params.id}`}>
+                                <Link href={`/conversations/create?character=${id}`}>
                                     <MessageSquare className="mr-2 h-4 w-4" />
                                     Use in Conversation
                                 </Link>
@@ -282,7 +284,7 @@ export default function CharacterDetailPage({ params }: CharacterDetailPageProps
                                     This character hasn't been used in any conversations yet.
                                 </p>
                                 <Button asChild className="mt-4">
-                                    <Link href={`/conversations/create?character=${params.id}`}>
+                                    <Link href={`/conversations/create?character=${id}`}>
                                         Start Conversation
                                     </Link>
                                 </Button>

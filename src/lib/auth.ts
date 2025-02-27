@@ -10,15 +10,34 @@ const USER_DATA_KEY = 'user_data';
 export const storeTokens = (tokens: TokenResponse) => {
     if (typeof window === 'undefined') return;
 
+    console.log('Storing tokens:', {
+        access_token_preview: tokens.access_token.substring(0, 10) + '...',
+        refresh_token_preview: tokens.refresh_token.substring(0, 10) + '...',
+    });
+
     localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access_token);
     localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh_token);
+
+    // Force the use of the new token right away for the next API call
+    if (api.defaults.headers) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${tokens.access_token}`;
+        console.log('Updated Authorization header in API client');
+    }
 };
 
 // Get the access token
 export const getToken = (): string | null => {
     if (typeof window === 'undefined') return null;
 
-    return localStorage.getItem(ACCESS_TOKEN_KEY);
+    const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+
+    if (token) {
+        console.log('Retrieved token (preview):', token.substring(0, 10) + '...');
+    } else {
+        console.log('No token found in storage');
+    }
+
+    return token;
 };
 
 // Get the refresh token
@@ -32,6 +51,7 @@ export const getRefreshToken = (): string | null => {
 export const storeUser = (user: User) => {
     if (typeof window === 'undefined') return;
 
+    console.log('Storing user data:', user);
     localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
 };
 
@@ -54,9 +74,15 @@ export const getStoredUser = (): User | null => {
 export const clearAuthData = () => {
     if (typeof window === 'undefined') return;
 
+    console.log('Clearing auth data');
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_DATA_KEY);
+
+    // Clear the Authorization header
+    if (api.defaults.headers) {
+        delete api.defaults.headers.common['Authorization'];
+    }
 };
 
 // Check if user is authenticated
@@ -70,15 +96,13 @@ export const refreshToken = async (): Promise<string | null> => {
     if (!refresh) return null;
 
     try {
-        const response = await api.post<TokenResponse>('/auth/refresh', {
-            refresh_token: refresh
-        });
+        // Import auth service dynamically to avoid circular dependencies
+        const AuthService = (await import('@/services/auth-service')).default;
+        const response = await AuthService.refreshToken(refresh);
 
-        const newTokens = response.data;
-        storeTokens(newTokens);
-
-        return newTokens.access_token;
+        return response.access_token;
     } catch (error) {
+        console.error('Failed to refresh token:', error);
         clearAuthData();
         return null;
     }

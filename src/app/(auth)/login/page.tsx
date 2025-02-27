@@ -35,8 +35,16 @@ export default function LoginPage() {
     });
 
     const onSubmit = async (values: LoginFormValues) => {
+        console.log('[Login] Form submitted with email:', values.email);
         clearError();
-        await login(values);
+
+        try {
+            console.log('[Login] Calling login function');
+            await login(values);
+            console.log('[Login] Login function completed');
+        } catch (error) {
+            console.error('[Login] Error during login:', error);
+        }
     };
 
     return (
